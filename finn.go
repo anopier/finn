@@ -198,7 +198,7 @@ type Node struct {
 	mu       sync.RWMutex
 	addr     string
 	snapshot raft.SnapshotStore
-	trans    *raftredcon.RedconTransport
+	Trans    *raftredcon.RedconTransport
 	raft     *raft.Raft
 	log      *redlog.Logger // the node logger
 	mlog     *redlog.Logger // the machine logger
@@ -339,7 +339,7 @@ func Open(dir, addr, join string, handler Machine, opts *Options) (node *Node, e
 
 	// start the raft server
 	n.addr = taddr.String()
-	n.trans, err = raftredcon.NewRedconTransport(
+	n.Trans, err = raftredcon.NewRedconTransport(
 		n.addr,
 		func(conn redcon.Conn, cmd redcon.Command) {
 			if atomic.LoadUint64(&doReady) != 0 {
@@ -357,7 +357,7 @@ func Open(dir, addr, join string, handler Machine, opts *Options) (node *Node, e
 
 	// Instantiate the Raft systems.
 	n.raft, err = raft.NewRaft(config, (*nodeFSM)(n),
-		n.store, n.store, n.snapshot, n.store, n.trans)
+		n.store, n.store, n.snapshot, n.store, n.Trans)
 	if err != nil {
 		n.Close()
 		return nil, err
@@ -393,8 +393,8 @@ func (n *Node) Close() error {
 	if n.raft != nil {
 		n.raft.Shutdown().Error()
 	}
-	if n.trans != nil {
-		n.trans.Close()
+	if n.Trans != nil {
+		n.Trans.Close()
 	}
 	// close the raft database
 	if n.store != nil {
